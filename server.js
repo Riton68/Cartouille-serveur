@@ -106,7 +106,11 @@ function executerCoupBot(party, joueurId) {
 function emettreResultatManche(party, resultat) {
   if (!resultat) return;
   if (resultat.evenement === 'partie_terminee') {
-    io.to(party.code).emit('partie_terminee', { perdants: resultat.perdants, scores: resultat.scores });
+    io.to(party.code).emit('partie_terminee', {
+      gagnantManche: resultat.gagnantManche,
+      perdants: resultat.perdants,
+      scores: resultat.scores,
+    });
   } else if (resultat.evenement === 'manche_terminee') {
     io.to(party.code).emit('manche_terminee', { gagnantManche: resultat.gagnantManche, scores: resultat.scores });
   }
