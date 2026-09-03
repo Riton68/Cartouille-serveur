@@ -114,7 +114,7 @@ function emettreResultatManche(party, resultat) {
   } else if (resultat.evenement === 'manche_terminee') {
     io.to(party.code).emit('manche_terminee', {
       gagnantManche: resultat.gagnantManche,
-      scores: resultat.scores,
+      scores: resultat.scoresManche,
       derniereCarte: resultat.derniereCarte,
     });
   }

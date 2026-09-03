@@ -236,12 +236,15 @@ function passerTour(state, joueurId) {
 
 function terminerManche(state, gagnantId, derniereCarteJouee) {
   const bonusJokerFinal = estJoker(derniereCarteJouee);
+  const pointsGagnesCetteManche = {};
+  for (const id of state.ordreJoueurs) pointsGagnesCetteManche[id] = 0;
 
   for (const id of state.ordreJoueurs) {
     if (id === gagnantId) continue;
     const joueur = state.joueurs[id];
     let points = joueur.main.reduce((total, c) => total + valeurPoints(c), 0);
     if (bonusJokerFinal) points += 20;
+    pointsGagnesCetteManche[id] = points;
     joueur.score += points;
   }
 
@@ -265,7 +268,8 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
   return {
     evenement: 'manche_terminee',
     gagnantManche: gagnantId,
-    scores: scoresActuels(state),
+    scoresManche: pointsGagnesCetteManche, // points gagnés UNIQUEMENT sur cette manche (0 pour le gagnant)
+    scores: scoresActuels(state), // scores cumulés, au cas où
     prochaineManche: state.manche,
     derniereCarte: derniereCarteJouee,
   };
