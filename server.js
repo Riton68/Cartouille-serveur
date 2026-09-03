@@ -283,7 +283,7 @@ io.on('connection', (socket) => {
     const nbBotsExistants = party.ordreJoueurs.filter((id) => estBot(party, id)).length;
     const botId = crypto.randomUUID();
     party.joueursInfo[botId] = {
-      pseudo: `Bot ${nbBotsExistants + 1} 🤖`,
+      pseudo: `Cartobot ${nbBotsExistants + 1} 🤖`,
       socketId: null,
       connecte: true,
       estBot: true,
