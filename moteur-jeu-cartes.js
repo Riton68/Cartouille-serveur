@@ -267,6 +267,7 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
     gagnantManche: gagnantId,
     scores: scoresActuels(state),
     prochaineManche: state.manche,
+    derniereCarte: derniereCarteJouee,
   };
 }
 
