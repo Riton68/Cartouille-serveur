@@ -62,25 +62,17 @@ function estBot(party, joueurId) {
 // (les bots n'ont pas besoin de donner leur avis), et si oui, relance
 // effectivement la partie vers le lobby.
 function declencherRejouerSiPret(party) {
-  if (!party.propositionRejouer) {
-    console.log('[rejouer] Pas de proposition en cours, on ignore.');
-    return;
-  }
+  if (!party.propositionRejouer) return;
   const tousOntAccepte = party.ordreJoueurs.every((id) => {
     if (estBot(party, id)) return true;
     if (!party.joueursInfo[id]?.connecte) return true; // déconnecté : ne peut pas répondre, ne bloque pas
     return party.propositionRejouer.accepteParJoueur.has(id);
   });
-  console.log('[rejouer] Vérification :', party.ordreJoueurs.map((id) => ({
-    id, pseudo: nomAffiche(party, id), bot: estBot(party, id),
-    connecte: party.joueursInfo[id]?.connecte, accepte: party.propositionRejouer.accepteParJoueur.has(id),
-  })), '=> tous prêts ?', tousOntAccepte);
   if (!tousOntAccepte) return;
 
   party.state = null;
   party.statut = 'lobby';
   party.propositionRejouer = null;
-  console.log('[rejouer] Tout le monde est prêt, retour au lobby pour le salon', party.code);
   diffuserEtat(party);
 }
 
@@ -350,7 +342,6 @@ io.on('connection', (socket) => {
   socket.on('quitter_salon', (_data, callback) => {
     const { code, joueurId } = socket.data;
     const party = parties.get(code);
-    console.log('[quitter_salon] Demande reçue. code=', code, 'joueurId=', joueurId, 'party existe ?', !!party);
     if (!party) return callback?.({ succes: true }); // déjà parti, rien à faire
     // On autorise à quitter tant qu'une partie n'est pas activement en cours
     // (donc en lobby, ou une fois la partie terminée en attendant "Rejouer").
