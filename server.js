@@ -58,6 +58,22 @@ function estBot(party, joueurId) {
   return !!party.joueursInfo[joueurId]?.estBot;
 }
 
+// Vérifie si tous les joueurs humains ont accepté la proposition de rejouer
+// (les bots n'ont pas besoin de donner leur avis), et si oui, relance
+// effectivement la partie vers le lobby.
+function declencherRejouerSiPret(party) {
+  if (!party.propositionRejouer) return;
+  const tousOntAccepte = party.ordreJoueurs.every(
+    (id) => estBot(party, id) || party.propositionRejouer.accepteParJoueur.has(id)
+  );
+  if (!tousOntAccepte) return;
+
+  party.state = null;
+  party.statut = 'lobby';
+  party.propositionRejouer = null;
+  diffuserEtat(party);
+}
+
 // ---------------------------------------------------------------------------
 // LOGIQUE DES BOTS (stratégie simple, réutilisée du script de test)
 // ---------------------------------------------------------------------------
@@ -317,8 +333,10 @@ io.on('connection', (socket) => {
     const { code, joueurId } = socket.data;
     const party = parties.get(code);
     if (!party) return callback?.({ succes: true }); // déjà parti, rien à faire
-    if (party.statut !== 'lobby') {
-      return callback?.({ succes: false, erreur: 'Impossible de quitter une partie déjà en cours.' });
+    // On autorise à quitter tant qu'une partie n'est pas activement en cours
+    // (donc en lobby, ou une fois la partie terminée en attendant "Rejouer").
+    if (party.state && party.state.enCours) {
+      return callback?.({ succes: false, erreur: 'Impossible de quitter une partie en cours.' });
     }
 
     delete party.joueursInfo[joueurId];
@@ -334,6 +352,7 @@ io.on('connection', (socket) => {
         party.hostId = party.ordreJoueurs.find((id) => !estBot(party, id)) || party.ordreJoueurs[0];
       }
       diffuserEtat(party);
+      declencherRejouerSiPret(party); // le départ de ce joueur suffisait peut-être à valider la proposition
     }
 
     callback?.({ succes: true });
@@ -409,17 +428,38 @@ io.on('connection', (socket) => {
   });
 
   // -- Rejouer avec les mêmes joueurs (hôte uniquement, une fois la partie finie) --
-  socket.on('rejouer', (_data, callback) => {
+  // -- Proposer de rejouer (hôte uniquement) : les autres joueurs humains
+  //    doivent accepter avant que la partie ne reparte réellement -----------------
+  socket.on('proposer_rejouer', (_data, callback) => {
     const { code, joueurId } = socket.data;
     const party = parties.get(code);
     if (!party) return callback?.({ succes: false, erreur: 'Salon introuvable.' });
-    if (party.hostId !== joueurId) return callback?.({ succes: false, erreur: "Seul l'hôte peut relancer une partie." });
+    if (party.hostId !== joueurId) return callback?.({ succes: false, erreur: "Seul l'hôte peut proposer de rejouer." });
     if (!party.state || party.state.enCours) return callback?.({ succes: false, erreur: "La partie n'est pas terminée." });
 
-    party.state = null;
-    party.statut = 'lobby';
+    party.propositionRejouer = { accepteParJoueur: new Set([joueurId]) }; // l'hôte accepte automatiquement sa propre proposition
     callback?.({ succes: true });
-    diffuserEtat(party);
+
+    // On informe les autres joueurs qu'une proposition est en cours
+    for (const id of party.ordreJoueurs) {
+      if (id === joueurId || estBot(party, id)) continue;
+      const socketId = party.joueursInfo[id]?.socketId;
+      if (socketId) io.to(socketId).emit('proposition_rejouer');
+    }
+
+    declencherRejouerSiPret(party); // au cas où il n'y a que des bots avec l'hôte
+  });
+
+  // -- Accepter une proposition de rejouer ---------------------------------------
+  socket.on('accepter_rejouer', (_data, callback) => {
+    const { code, joueurId } = socket.data;
+    const party = parties.get(code);
+    if (!party || !party.propositionRejouer) {
+      return callback?.({ succes: false, erreur: 'Aucune proposition en cours.' });
+    }
+    party.propositionRejouer.accepteParJoueur.add(joueurId);
+    callback?.({ succes: true });
+    declencherRejouerSiPret(party);
   });
 
   // -- Déconnexion ------------------------------------------------------------
