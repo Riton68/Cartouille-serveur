@@ -312,6 +312,33 @@ io.on('connection', (socket) => {
     diffuserEtat(party);
   });
 
+  // -- Quitter le salon (uniquement en lobby, avant qu'une partie ne démarre) ----
+  socket.on('quitter_salon', (_data, callback) => {
+    const { code, joueurId } = socket.data;
+    const party = parties.get(code);
+    if (!party) return callback?.({ succes: true }); // déjà parti, rien à faire
+    if (party.statut !== 'lobby') {
+      return callback?.({ succes: false, erreur: 'Impossible de quitter une partie déjà en cours.' });
+    }
+
+    delete party.joueursInfo[joueurId];
+    party.ordreJoueurs = party.ordreJoueurs.filter((id) => id !== joueurId);
+    socket.leave(code);
+    socket.data = {};
+
+    if (party.ordreJoueurs.length === 0) {
+      parties.delete(code);
+    } else {
+      // Si l'hôte est parti, on transfère le rôle au joueur suivant
+      if (party.hostId === joueurId) {
+        party.hostId = party.ordreJoueurs.find((id) => !estBot(party, id)) || party.ordreJoueurs[0];
+      }
+      diffuserEtat(party);
+    }
+
+    callback?.({ succes: true });
+  });
+
   // -- Démarrer la partie (hôte uniquement) -------------------------------------
   socket.on('demarrer_partie', (_data, callback) => {
     const { code, joueurId } = socket.data;
