@@ -220,8 +220,13 @@ function piocherCarte(state, joueurId) {
 
   const jouableMaintenant = carteEstJouable(carte, carteHaut(state), state.couleurActive);
   if (!jouableMaintenant) {
-    // Le joueur ne peut pas la jouer : son tour s'arrête automatiquement.
-    passerAuJoueurSuivant(state);
+    // La carte piochée n'est pas jouable, mais il peut rester une AUTRE carte
+    // jouable dans la main (piochée librement en ayant déjà un coup possible).
+    // On ne force le passage du tour que s'il n'y a vraiment plus rien à jouer.
+    const autresCartesJouables = cartesJouables(joueur.main, carteHaut(state), state.couleurActive);
+    if (autresCartesJouables.length === 0) {
+      passerAuJoueurSuivant(state);
+    }
   }
 
   return { evenement: 'carte_piochee', joueurId, carte, jouableMaintenant };
