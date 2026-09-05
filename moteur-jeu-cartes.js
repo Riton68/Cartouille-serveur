@@ -175,7 +175,12 @@ function jouerCarte(state, joueurId, carteId, couleurDemandee) {
     throw new Error('Ce coup n\'est pas autorisé.');
   }
 
-  if (estJoker(carte) || est9(carte)) {
+  const estDerniereCarte = joueur.main.length === 1;
+
+  // Une couleur n'est exigée que si la partie continue après ce coup : si
+  // c'est la dernière carte du joueur, la manche s'arrête immédiatement et
+  // la couleur demandée ne servirait à personne.
+  if ((estJoker(carte) || est9(carte)) && !estDerniereCarte) {
     if (!COULEURS.includes(couleurDemandee)) {
       throw new Error('Vous devez annoncer une couleur valide en jouant cette carte.');
     }
@@ -184,7 +189,9 @@ function jouerCarte(state, joueurId, carteId, couleurDemandee) {
   // On retire la carte de la main et on l'ajoute à la défausse
   joueur.main = joueur.main.filter((c) => c.id !== carteId);
   state.defausse.push(carte);
-  state.couleurActive = (estJoker(carte) || est9(carte)) ? couleurDemandee : carte.couleur;
+  if (!estDerniereCarte) {
+    state.couleurActive = (estJoker(carte) || est9(carte)) ? couleurDemandee : carte.couleur;
+  }
 
   // Fin de manche ?
   if (joueur.main.length === 0) {
