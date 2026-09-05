@@ -344,7 +344,11 @@ io.on('connection', (socket) => {
     socket.leave(code);
     socket.data = {};
 
-    if (party.ordreJoueurs.length === 0) {
+    const resteUnHumain = party.ordreJoueurs.some((id) => !estBot(party, id));
+
+    if (party.ordreJoueurs.length === 0 || !resteUnHumain) {
+      // Plus personne (ou plus que des bots, qui ne peuvent pas jouer seuls) :
+      // on supprime le salon. Les éventuels bots restants disparaissent avec.
       parties.delete(code);
     } else {
       // Si l'hôte est parti, on transfère le rôle au joueur suivant
