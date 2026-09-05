@@ -185,7 +185,7 @@ function etatPourJoueur(party, joueurId) {
       joueurs: party.ordreJoueurs.map((id) => ({
         id,
         pseudo: nomAffiche(party, id),
-        connecte: party.joueursInfo[id].connecte,
+        connecte: party.joueursInfo[id]?.connecte ?? false,
         estHote: id === party.hostId,
         estBot: estBot(party, id),
       })),
@@ -205,11 +205,14 @@ function etatPourJoueur(party, joueurId) {
     scores: moteur.scoresActuels(state),
     perdants: state.perdants,
     maMain: state.joueurs[joueurId] ? state.joueurs[joueurId].main : [],
-    joueurs: state.ordreJoueurs.map((id) => ({
+    // On utilise party.ordreJoueurs (la liste À JOUR du salon) et non
+    // state.ordreJoueurs (figée depuis le début de la manche), sinon un
+    // joueur qui vient de quitter après la fin de partie provoque un plantage.
+    joueurs: party.ordreJoueurs.map((id) => ({
       id,
       pseudo: nomAffiche(party, id),
-      connecte: party.joueursInfo[id].connecte,
-      nombreCartes: state.joueurs[id].main.length,
+      connecte: party.joueursInfo[id]?.connecte ?? false,
+      nombreCartes: state.joueurs[id] ? state.joueurs[id].main.length : 0,
       estBot: estBot(party, id),
     })),
   };
@@ -217,9 +220,14 @@ function etatPourJoueur(party, joueurId) {
 
 function diffuserEtat(party) {
   for (const joueurId of party.ordreJoueurs) {
-    const socketId = party.joueursInfo[joueurId].socketId;
-    if (socketId) {
+    const socketId = party.joueursInfo[joueurId]?.socketId;
+    if (!socketId) continue;
+    try {
       io.to(socketId).emit('etat_partie', etatPourJoueur(party, joueurId));
+    } catch (err) {
+      // Ne jamais laisser un souci d'affichage pour UN joueur faire planter
+      // tout le serveur (et donc couper tout le monde) : on log et on continue.
+      console.error('[diffuserEtat] Erreur pour', joueurId, ':', err.message);
     }
   }
 }
