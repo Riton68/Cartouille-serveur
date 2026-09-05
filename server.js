@@ -116,6 +116,7 @@ function emettreResultatManche(party, resultat) {
       gagnantManche: resultat.gagnantManche,
       scores: resultat.scoresManche,
       derniereCarte: resultat.derniereCarte,
+      cartesRestantes: resultat.cartesRestantes,
     });
   }
 }
