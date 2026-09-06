@@ -363,6 +363,9 @@ io.on('connection', (socket) => {
       socket.leave(code);
       socket.data = {};
       diffuserEtat(party);
+      io.to(code).emit('notification', {
+        message: `${infos ? infos.pseudo.replace(' 🤖', '') : 'Un joueur'} a quitté la partie, un Cartobot prend sa place.`,
+      });
       planifierTourBotSiNecessaire(party); // au cas où c'était déjà son tour
       return callback?.({ succes: true });
     }
