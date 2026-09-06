@@ -343,12 +343,32 @@ io.on('connection', (socket) => {
     const { code, joueurId } = socket.data;
     const party = parties.get(code);
     if (!party) return callback?.({ succes: true }); // déjà parti, rien à faire
-    // On autorise à quitter tant qu'une partie n'est pas activement en cours
-    // (donc en lobby, ou une fois la partie terminée en attendant "Rejouer").
+
+    // Cas 1 : une partie est activement en cours. On ne peut pas simplement
+    // retirer ce joueur (ça casserait l'ordre de jeu du moteur), donc on le
+    // TRANSFORME en Cartobot : il continue d'exister dans la partie, mais
+    // c'est désormais l'IA qui joue à sa place, sans que personne n'ait à
+    // attendre son retour.
     if (party.state && party.state.enCours) {
-      return callback?.({ succes: false, erreur: 'Impossible de quitter une partie en cours.' });
+      const infos = party.joueursInfo[joueurId];
+      if (infos) {
+        infos.estBot = true;
+        infos.socketId = null;
+        infos.connecte = true;
+        if (!infos.pseudo.includes('🤖')) infos.pseudo = `${infos.pseudo} 🤖`;
+      }
+      if (party.hostId === joueurId) {
+        party.hostId = party.ordreJoueurs.find((id) => id !== joueurId && !estBot(party, id)) || party.ordreJoueurs[0];
+      }
+      socket.leave(code);
+      socket.data = {};
+      diffuserEtat(party);
+      planifierTourBotSiNecessaire(party); // au cas où c'était déjà son tour
+      return callback?.({ succes: true });
     }
 
+    // Cas 2 : en lobby ou partie terminée (pas de manche en cours) : on
+    // retire vraiment le joueur, comme avant.
     delete party.joueursInfo[joueurId];
     party.ordreJoueurs = party.ordreJoueurs.filter((id) => id !== joueurId);
     socket.leave(code);
