@@ -284,10 +284,14 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
 
   const perdants = state.ordreJoueurs.filter((id) => state.joueurs[id].score > 100);
 
-  // On capture le nombre de cartes qu'il restait à chacun À LA FIN de cette
-  // manche (avant que la nouvelle donne ne remplace les mains).
+  // On capture le nombre ET les vraies cartes qu'il restait à chacun À LA FIN
+  // de cette manche (avant que la nouvelle donne ne remplace les mains).
   const cartesRestantes = {};
-  for (const id of state.ordreJoueurs) cartesRestantes[id] = state.joueurs[id].main.length;
+  const mainsRestantes = {};
+  for (const id of state.ordreJoueurs) {
+    cartesRestantes[id] = state.joueurs[id].main.length;
+    mainsRestantes[id] = [...state.joueurs[id].main];
+  }
 
   if (perdants.length > 0) {
     state.enCours = false;
@@ -297,6 +301,7 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
       gagnantManche: gagnantId,
       perdants,
       scores: scoresActuels(state),
+      mainsRestantes, // cartes exactes de chacun à la toute fin de la partie
     };
   }
 
@@ -312,6 +317,7 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
     prochaineManche: state.manche,
     derniereCarte: derniereCarteJouee,
     cartesRestantes, // nombre de cartes de chacun à la fin de LA MANCHE QUI VIENT DE FINIR
+    mainsRestantes, // les vraies cartes de chacun à la fin de cette manche
   };
 }
 
