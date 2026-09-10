@@ -440,8 +440,24 @@ io.on('connection', (socket) => {
 
     try {
       const resultat = moteur.piocherCarte(party.state, joueurId);
+
+      if (resultat.evenement === 'pioche_impossible') {
+        callback?.({ succes: true, piocheImpossible: true });
+        diffuserEtat(party);
+        io.to(code).emit('notification', {
+          message: "Plus aucune carte disponible : le tour passe automatiquement.",
+        });
+        planifierTourBotSiNecessaire(party);
+        return;
+      }
+
       callback?.({ succes: true, carte: resultat.carte, jouableMaintenant: resultat.jouableMaintenant });
       diffuserEtat(party);
+      if (resultat.remelangeEffectue) {
+        io.to(code).emit('notification', {
+          message: 'La pioche était vide : les cartes défaussées ont été remélangées.',
+        });
+      }
       planifierTourBotSiNecessaire(party);
     } catch (err) {
       callback?.({ succes: false, erreur: err.message });

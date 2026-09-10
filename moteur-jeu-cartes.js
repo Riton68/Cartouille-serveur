@@ -55,6 +55,18 @@ function valeurPoints(carte) {
 function estJoker(carte) { return carte.valeur === 'joker'; }
 function est9(carte) { return carte.valeur === 9; }
 
+// Message d'aide affiché quand un coup est refusé, pour indiquer clairement
+// ce qui serait accepté à la place (plutôt qu'un simple "coup refusé").
+function decrireCoupAttendu(carteHaut, couleurActive) {
+  if (estJoker(carteHaut)) {
+    return `Il faut une carte de ${couleurActive}.`;
+  }
+  if (est9(carteHaut)) {
+    return `Il faut un 9, ou une carte de ${couleurActive}.`;
+  }
+  return `Il faut une carte de ${carteHaut.couleur} ou de valeur ${carteHaut.valeur}, ou un Joker/9.`;
+}
+
 function carteEstJouable(carteJouee, carteHaut, couleurActive) {
   if (estJoker(carteHaut)) {
     // Sur un Joker : ni Joker ni 9, seulement la couleur demandée
@@ -153,10 +165,11 @@ function passerAuJoueurSuivant(state) {
 }
 
 function reconstituerPiocheSiVide(state) {
-  if (state.pioche.length > 0) return;
+  if (state.pioche.length > 0) return false;
   const derniere = state.defausse.pop(); // on garde la carte active de côté
   state.pioche = melanger(state.defausse);
   state.defausse = [derniere];
+  return true; // un remélange a bien eu lieu
 }
 
 /**
@@ -172,7 +185,7 @@ function jouerCarte(state, joueurId, carteId, couleurDemandee) {
   if (!carte) throw new Error("Cette carte n'est pas dans votre main.");
 
   if (!carteEstJouable(carte, carteHaut(state), state.couleurActive)) {
-    throw new Error('Ce coup n\'est pas autorisé.');
+    throw new Error(`Ce coup n'est pas autorisé. ${decrireCoupAttendu(carteHaut(state), state.couleurActive)}`);
   }
 
   const estDerniereCarte = joueur.main.length === 1;
@@ -212,8 +225,17 @@ function piocherCarte(state, joueurId) {
   if (state.aPioche) throw new Error('Vous avez déjà pioché ce tour.');
 
   const joueur = state.joueurs[joueurId];
+  const remelangeEffectue = reconstituerPiocheSiVide(state);
 
-  reconstituerPiocheSiVide(state);
+  if (state.pioche.length === 0) {
+    // Cas limite : plus aucune carte nulle part (tout est dans les mains des
+    // joueurs, sauf la carte active sur la défausse). Impossible de piocher :
+    // on passe le tour proprement plutôt que de planter.
+    state.aPioche = true;
+    passerAuJoueurSuivant(state);
+    return { evenement: 'pioche_impossible', joueurId };
+  }
+
   const carte = state.pioche.shift();
   joueur.main.push(carte);
   state.aPioche = true;
@@ -229,7 +251,7 @@ function piocherCarte(state, joueurId) {
     }
   }
 
-  return { evenement: 'carte_piochee', joueurId, carte, jouableMaintenant };
+  return { evenement: 'carte_piochee', joueurId, carte, jouableMaintenant, remelangeEffectue };
 }
 
 /**
