@@ -235,7 +235,7 @@ io.on('connection', (socket) => {
   console.log(`Connexion : ${socket.id}`);
 
   // -- Créer un salon --------------------------------------------------------
-  socket.on('creer_partie', ({ pseudo }, callback) => {
+  socket.on('creer_partie', ({ pseudo, publique }, callback) => {
     try {
       const code = genererCode();
       const joueurId = crypto.randomUUID();
@@ -245,6 +245,7 @@ io.on('connection', (socket) => {
         code,
         hostId: joueurId,
         statut: 'lobby',
+        publique: !!publique,
         joueursInfo: {
           [joueurId]: { pseudo: pseudo || 'Joueur 1', socketId: socket.id, connecte: true, jeton },
         },
@@ -262,6 +263,21 @@ io.on('connection', (socket) => {
     } catch (err) {
       callback({ succes: false, erreur: err.message });
     }
+  });
+
+  // -- Lister les parties publiques disponibles (en lobby, pas pleines) -----------
+  socket.on('lister_parties_publiques', (_data, callback) => {
+    const liste = [];
+    for (const party of parties.values()) {
+      if (party.publique && party.statut === 'lobby' && party.ordreJoueurs.length < 4) {
+        liste.push({
+          code: party.code,
+          nbJoueurs: party.ordreJoueurs.length,
+          hote: nomAffiche(party, party.hostId),
+        });
+      }
+    }
+    callback?.({ succes: true, parties: liste });
   });
 
   // -- Rejoindre un salon existant --------------------------------------------
