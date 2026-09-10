@@ -146,7 +146,8 @@ function planifierTourBotSiNecessaire(party, delaiSupplementaire = 0) {
   const joueurId = party.state.ordreJoueurs[party.state.tourIndex];
   if (!estBot(party, joueurId)) return;
 
-  const delai = 900 + Math.random() * 700 + delaiSupplementaire;
+  // Délai aléatoire entre 1 et 3 secondes, pour un rythme plus naturel/réaliste
+  const delai = 1000 + Math.random() * 2000 + delaiSupplementaire;
   setTimeout(() => {
     // Le salon ou la partie a pu changer entre-temps (déconnexion, etc.)
     if (!parties.has(party.code) || !party.state || !party.state.enCours) return;
