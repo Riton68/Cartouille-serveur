@@ -128,7 +128,9 @@ function emettreResultatManche(party, resultat) {
       gagnantManche: resultat.gagnantManche,
       perdants: resultat.perdants,
       scores: resultat.scores,
+      cartesRestantes: resultat.cartesRestantes,
       mainsRestantes: resultat.mainsRestantes,
+      derniereCarte: resultat.derniereCarte,
     });
   } else if (resultat.evenement === 'manche_terminee') {
     io.to(party.code).emit('manche_terminee', {

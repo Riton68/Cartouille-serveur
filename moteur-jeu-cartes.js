@@ -301,7 +301,9 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
       gagnantManche: gagnantId,
       perdants,
       scores: scoresActuels(state),
+      cartesRestantes, // nombre de cartes de chacun à la toute fin de la partie
       mainsRestantes, // cartes exactes de chacun à la toute fin de la partie
+      derniereCarte: derniereCarteJouee,
     };
   }
 
