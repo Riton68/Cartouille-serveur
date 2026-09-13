@@ -127,7 +127,7 @@ function emettreResultatManche(party, resultat) {
     io.to(party.code).emit('partie_terminee', {
       gagnantManche: resultat.gagnantManche,
       perdants: resultat.perdants,
-      scores: resultat.scores,
+      scores: resultat.scoresManche, // points de la DERNIÈRE manche uniquement, pour l'écran de récap
       cartesRestantes: resultat.cartesRestantes,
       mainsRestantes: resultat.mainsRestantes,
       derniereCarte: resultat.derniereCarte,

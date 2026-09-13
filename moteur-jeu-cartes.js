@@ -300,7 +300,8 @@ function terminerManche(state, gagnantId, derniereCarteJouee) {
       evenement: 'partie_terminee',
       gagnantManche: gagnantId,
       perdants,
-      scores: scoresActuels(state),
+      scores: scoresActuels(state), // scores CUMULÉS, pour l'écran final définitif
+      scoresManche: pointsGagnesCetteManche, // points gagnés sur cette DERNIÈRE manche uniquement
       cartesRestantes, // nombre de cartes de chacun à la toute fin de la partie
       mainsRestantes, // cartes exactes de chacun à la toute fin de la partie
       derniereCarte: derniereCarteJouee,
